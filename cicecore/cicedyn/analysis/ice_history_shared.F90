@@ -4,7 +4,8 @@
 !
 ! The following variables are currently hard-wired as snapshots
 !   (instantaneous rather than time-averages):
-!   divu, shear, sig1, sig2, sigP, trsig, mlt_onset, frz_onset, hisnap, aisnap
+!   divu, shear, vort, sig1, sig2, sigP, trsig, mlt_onset,
+!   frz_onset, hisnap, aisnap
 !
 ! Options for histfreq: '1','h','d','m','y','x', where x means that
 !   output stream will not be used (recommended for efficiency).
@@ -48,17 +49,22 @@
          history_dir   , & ! directory name for history file
          incond_dir        ! directory for snapshot initial conditions
 
-      character (len=char_len_long), public :: &
-         pointer_file      ! input pointer file for restarts
-
       character (len=char_len), public :: &
          version_name
 
       character (len=char_len), public :: &
-         history_format
+         history_format      , & ! history format, cdf1, cdf2, cdf5, etc
+         history_rearranger      ! history file rearranger, box or subset for pio
 
       character (len=char_len), public :: &
          hist_suffix(max_nstrm)  ! appended to 'h' in filename when not 'x'
+
+      integer (kind=int_kind), public :: &
+         history_iotasks     , & ! iotasks, root, stride defines io pes for pio
+         history_root        , & ! iotasks, root, stride defines io pes for pio
+         history_stride      , & ! iotasks, root, stride defines io pes for pio
+         history_deflate     , & ! compression level for hdf5/netcdf4
+         history_chunksize(2) ! chunksize for hdf5/netcdf4
 
       !---------------------------------------------------------------
       ! Instructions for adding a field: (search for 'example')
@@ -267,7 +273,7 @@
            f_strocnxE  = 'x', f_strocnyE   = 'x', &
            f_strintxE  = 'x', f_strintyE   = 'x', &
            f_taubxE    = 'x', f_taubyE     = 'x', &
-           f_strength  = 'm', &
+           f_strength  = 'm', f_vort       = 'm', &
            f_divu      = 'm', f_shear      = 'm', &
            f_sig1      = 'm', f_sig2       = 'm', &
            f_sigP      = 'm', &
@@ -434,7 +440,7 @@
 !          f_strocnxE,  f_strocnyE , &
 !          f_strintxE,  f_strintyE , &
 !          f_taubxE,    f_taubyE   , &
-           f_strength,  &
+           f_strength,  f_vort     , &
            f_divu,      f_shear    , &
            f_sig1,      f_sig2     , &
            f_sigP,      &
@@ -626,7 +632,7 @@
            n_strocnxE   , n_strocnyE   , &
            n_strintxE   , n_strintyE   , &
            n_taubxE     , n_taubyE     , &
-           n_strength   , &
+           n_strength   , n_vort       , &
            n_divu       , n_shear      , &
            n_sig1       , n_sig2       , &
            n_sigP       , &
