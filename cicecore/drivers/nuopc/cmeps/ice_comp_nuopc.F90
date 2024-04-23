@@ -1132,7 +1132,13 @@ contains
        write(restart_date,"(i4.4,a,i2.2,a,i2.2,a,i5.5)") yy, '-', mm, '-',dd,'-',tod
        write(restart_filename,'(4a)') trim(restart_dir), trim(restart_file), '.', trim(restart_date)
     else
-       force_restart_now = .false.
+       call ESMF_ClockGetAlarm(clock, alarmname='alarm_stop', alarm=alarm, rc=rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (ESMF_AlarmIsRinging(alarm, rc=rc)) then
+          force_restart_now = .true.
+       else
+          force_restart_now = .false.
+       endif
     endif
 
     !--------------------------------
