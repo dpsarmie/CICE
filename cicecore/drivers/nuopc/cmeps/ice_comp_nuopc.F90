@@ -95,6 +95,7 @@ module ice_comp_nuopc
   logical                      :: profile_memory = .false.
   logical                      :: mastertask
   logical                      :: runtimelog = .false.
+  logical                      :: restart_eor = .false. !End of run restart flag
   integer                      :: start_ymd          ! Start date (YYYYMMDD)
   integer                      :: start_tod          ! start time of day (s)
   integer                      :: curr_ymd           ! Current date (YYYYMMDD)
@@ -315,6 +316,12 @@ contains
     if (isPresent .and. isSet) runtimelog=(trim(cvalue)=="true")
     write(logmsg,*) runtimelog
     call ESMF_LogWrite('CICE_cap:RunTimeLog = '//trim(logmsg), ESMF_LOGMSG_INFO)
+
+    call NUOPC_CompAttributeGet(gcomp, name="write_restart_at_endofrun", value=cvalue, isPresent=isPresent, isSet=isSet, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (isPresent .and. isSet) then
+       if (trim(cvalue) .eq. '.true.') restart_eor = .true.
+    endif
 
     !----------------------------------------------------------------------------
     ! generate local mpi comm
@@ -1136,13 +1143,10 @@ contains
     endif
 
     ! Handle end of run restart
-    call NUOPC_CompAttributeGet(gcomp, name="write_restart_at_endofrun", value=cvalue, isPresent=isPresent, isSet=isSet, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call ESMF_ClockGetAlarm(clock, alarmname='alarm_stop', alarm=alarm, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    if (isPresent .and. isSet .and. ESMF_AlarmIsRinging(alarm, rc=rc)) then
-       if (trim(cvalue) .eq. '.true.') force_restart_now = .true.
+    if (restart_eor) then
+       call ESMF_ClockGetAlarm(clock, alarmname='alarm_stop', alarm=alarm, rc=rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (ESMF_AlarmIsRinging(alarm, rc=rc)) force_restart_now = .true.
     endif
 
     !--------------------------------
