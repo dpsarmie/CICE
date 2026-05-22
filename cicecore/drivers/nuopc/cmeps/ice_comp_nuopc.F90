@@ -1052,7 +1052,8 @@ contains
     !---------------------------------------------------------------------------
     ! Run CICE
     !---------------------------------------------------------------------------
-
+    use ice_calendar,       only: write_history, histfreq, nstreams
+    use ice_history_shared, only: history_dir
     ! Arguments
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
@@ -1085,6 +1086,7 @@ contains
     logical                    :: isPresent, isSet
 #ifndef CESMCOUPLED
     logical                    :: write_restartfh
+    integer                    :: ns
 #endif
     character(len=*),parameter :: subname=trim(modName)//':(ModelAdvance) '
     character(char_len_long)   :: msgString
@@ -1276,20 +1278,15 @@ contains
 
 #ifndef CESMCOUPLED
     if (mastertask) then
-       block
-         use ice_calendar, only: write_history, histfreq, nstreams
-         use ice_history_shared, only: history_dir
-         integer :: ns
-         do ns = 1, nstreams
-            if (write_history(ns) .and. histfreq(ns) .eq. 'h') then
-               call ESMF_ClockGetNextTime(clock, nextTime=nextTime, rc=rc)
-               if (ChkErr(rc,__LINE__,u_FILE_u)) return
-               call log_restart_fh(nextTime, startTime, 'ice', output_dir=history_dir, rc=rc)
-               if (ChkErr(rc,__LINE__,u_FILE_u)) return
-               exit
-            end if
-         end do
-       end block
+       do ns = 1, nstreams
+          if (write_history(ns) .and. histfreq(ns) .eq. 'h') then
+             call ESMF_ClockGetNextTime(clock, nextTime=nextTime, rc=rc)
+             if (ChkErr(rc,__LINE__,u_FILE_u)) return
+             call log_restart_fh(nextTime, startTime, 'ice', output_dir=history_dir, rc=rc)
+             if (ChkErr(rc,__LINE__,u_FILE_u)) return
+             exit
+          end if
+       end do
     end if
 #endif
     !--------------------------------
