@@ -577,7 +577,7 @@ contains
        nu_diag_set = .true.
     end if
 
-    call NUOPC_CompAttributeGet(gcomp, name="mom6_write_log_to_output_dir", value=cvalue, isPresent=isPresent, isSet=isSet, rc=rc)
+    call NUOPC_CompAttributeGet(gcomp, name="cice_write_log_to_output_dir", value=cvalue, isPresent=isPresent, isSet=isSet, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     if (isPresent .and. isSet) then
        if (trim(cvalue) .eq. '.true.') log_to_output = .true.
