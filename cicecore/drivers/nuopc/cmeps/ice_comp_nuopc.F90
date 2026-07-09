@@ -104,6 +104,7 @@ module ice_comp_nuopc
   logical                      :: mastertask
   logical                      :: runtimelog = .false.
   logical                      :: restart_eor = .false. !End of run restart flag
+  logical                      :: log_to_output = .false. ! Write logs to CICE output dir
 #ifndef CESMCOUPLED
   type(is_restart_fh_type)     :: restartfh_info     ! For flexible restarts in UFS
 #endif
@@ -576,6 +577,11 @@ contains
        nu_diag_set = .true.
     end if
 
+    call NUOPC_CompAttributeGet(gcomp, name="mom6_write_log_to_output_dir", value=cvalue, isPresent=isPresent, isSet=isSet, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (isPresent .and. isSet) then
+       if (trim(cvalue) .eq. '.true.') log_to_output = .true.
+    endif
     !----------------------------------------------------------------------------
     ! First cice initialization phase - before initializing grid info
     !----------------------------------------------------------------------------
@@ -1086,8 +1092,9 @@ contains
     character(char_len_long)   :: restart_filename
     logical                    :: isPresent, isSet
 #ifndef CESMCOUPLED
-    logical                    :: write_restartfh
-    integer                    :: ns
+    character(len=256), allocatable :: logdir
+    logical                         :: write_restartfh
+    integer                         :: ns
 #endif
     character(len=*),parameter :: subname=trim(modName)//':(ModelAdvance) '
     character(char_len_long)   :: msgString
@@ -1281,12 +1288,13 @@ contains
     ! Write output logs
     !--------------------------------
 #ifndef CESMCOUPLED
+    if (log_to_output) logdir=history_dir
     if (mastertask) then
        do ns = 1, nstreams
           if (write_history(ns) .and. histfreq(ns) .eq. 'h') then
              call ESMF_ClockGetNextTime(clock, nextTime=nextTime, rc=rc)
              if (ChkErr(rc,__LINE__,u_FILE_u)) return
-             call log_restart_fh(nextTime, startTime, 'ice', output_dir=history_dir, rc=rc)
+             call log_restart_fh(nextTime, startTime, 'ice', output_dir=logdir, rc=rc)
              if (ChkErr(rc,__LINE__,u_FILE_u)) return
              exit
           end if
